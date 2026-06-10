@@ -1,0 +1,32 @@
+name: Telegram Watchdog
+
+# Daily safety net for the publishing pipeline. Runs ~2 hours after the post
+# window and checks whether today's pool post actually went out. If not (cron
+# didn't fire, or the run failed), it opens a GitHub issue — GitHub then emails
+# the repo owner. It never posts to the channel itself.
+
+on:
+  schedule:
+    - cron: "0 11 * * *"     # 11:00 UTC — buffer after the 09:00 scheduler window
+  workflow_dispatch:          # manual check anytime
+
+permissions:
+  actions: write              # read run history AND dispatch the scheduler to self-heal
+  issues: write               # open an issue only if auto-recovery fails
+  contents: read
+
+concurrency:
+  group: telegram-watchdog
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify today's post (self-heal on miss)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/watchdog.sh

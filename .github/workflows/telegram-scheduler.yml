@@ -1,0 +1,45 @@
+name: Telegram Scheduler (queue)
+
+# Publishes the next post from queue/ once a day, then commits the archived
+# item back to the repo. The GitHub-hosted runner has open outbound access to
+# api.telegram.org (the sandbox does not), so sending works here.
+#
+# Cadence: 09:00 UTC, every day = 7 posts/week. Note: GitHub may delay scheduled
+# runs under load, and disables schedules after ~60 days with no repo activity —
+# a commit or a manual run re-arms them.
+
+on:
+  schedule:
+    - cron: "0 9 * * *"
+  workflow_dispatch:        # manual run: publish the next item now (e.g. to test or catch up)
+
+permissions:
+  contents: write           # needed to commit the archived item back to main
+
+concurrency:
+  group: telegram-scheduler
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Publish next queued post
+        id: pub
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: bash scripts/publish_next.sh
+
+      - name: Commit archived item
+        if: steps.pub.outputs.published != ''
+        run: |
+          git config user.name "Claude"
+          git config user.email "noreply@anthropic.com"
+          git add -A
+          git commit -m "Scheduler: published $(basename '${{ steps.pub.outputs.published }}')" || exit 0
+          git push
+

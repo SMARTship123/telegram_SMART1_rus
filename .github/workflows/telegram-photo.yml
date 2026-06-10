@@ -1,0 +1,32 @@
+name: Post Photo to Telegram
+
+# Sends an image with an optional caption to the «Вибродиагностика судов · vibrotors.ru» channel.
+# The image can be a file committed in the repo (e.g. images/vcm.png) or a public URL.
+
+on:
+  workflow_dispatch:
+    inputs:
+      photo:
+        description: "Image: repo path (e.g. images/vcm.png) or a public http(s) URL"
+        required: true
+        type: string
+        default: "images/sample-vcm.png"
+      caption:
+        description: "Caption text (HTML allowed, up to 1024 chars)"
+        required: false
+        type: string
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Send photo
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          INPUT_PHOTO: ${{ github.event.inputs.photo }}
+          INPUT_CAPTION: ${{ github.event.inputs.caption }}
+        run: bash scripts/post_photo.sh

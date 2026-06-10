@@ -1,0 +1,31 @@
+name: Post to Telegram
+
+# Sends a message to the «Вибродиагностика судов · vibrotors.ru» Telegram channel.
+# The GitHub-hosted runner has open outbound network access to api.telegram.org,
+# which is why posting works here even when a local/sandboxed environment cannot reach it.
+
+on:
+  # Manual run: paste the post text in the Actions UI and dispatch.
+  workflow_dispatch:
+    inputs:
+      message:
+        description: "Post text (280-380 chars). Leave empty to send posts/latest.txt"
+        required: false
+        type: string
+  # Optional scheduled run (disabled by default — uncomment to enable).
+  # schedule:
+  #   - cron: "0 9 * * 1"   # every Monday 09:00 UTC
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Send message
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          INPUT_MESSAGE: ${{ github.event.inputs.message }}
+        run: bash scripts/post_telegram.sh

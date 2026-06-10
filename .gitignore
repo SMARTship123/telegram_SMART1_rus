@@ -1,0 +1,3 @@
+# Python bytecode cache (from importing scripts/make_visual.py etc.)
+__pycache__/
+*.pyc
